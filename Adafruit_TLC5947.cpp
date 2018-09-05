@@ -17,8 +17,17 @@
 
 
 #include <Adafruit_TLC5947.h>
+#include <SPI.h>
 
-Adafruit_TLC5947::Adafruit_TLC5947(uint16_t n, uint8_t c, uint8_t d, uint8_t l) {
+
+Adafruit_TLC5947::Adafruit_TLC5947() {
+  // constructor empty
+  // initialize with init() to allow for Serial.debugging
+}
+
+// software SPI mode
+void Adafruit_TLC5947::init(uint16_t n, uint8_t c, uint8_t d, uint8_t l) {
+  Serial.println("Adafruit_TLC5947 init for Software SPI");
   numdrivers = n;
   _clk = c;
   _dat = d;
@@ -29,28 +38,80 @@ Adafruit_TLC5947::Adafruit_TLC5947(uint16_t n, uint8_t c, uint8_t d, uint8_t l) 
   memset(pwmbuffer, 0, 2*24*n);
 }
 
-void Adafruit_TLC5947::write(void) {
-  digitalWrite(_lat, LOW);
-  // 24 channels per TLC5974
-  for (int16_t c=24*numdrivers - 1; c >= 0 ; c--) {
-    // 12 bits per channel, send MSB first
-    for (int8_t b=11; b>=0; b--) {
+
+// hardware SPI mode
+void Adafruit_TLC5947::init(uint16_t n, uint8_t l) {
+  Serial.println("Adafruit_TLC5947 init for Hardware SPI");
+  numdrivers = n;
+  _clk = -1;
+  _dat = -1;
+  _lat = l;
+
+// set SPI settings in write() call to enable multiple parallel SPI calls/settings
+//   SPI.setBitOrder(MSBFIRST);
+// #ifdef __arm__
+//   SPI.setClockDivider(42);
+// #else
+//   SPI.setClockDivider(SPI_CLOCK_DIV8);
+// #endif
+//   SPI.setDataMode(SPI_MODE0);
+
+  pwmbuffer = (uint16_t *)calloc(2, 24*n);
+  memset(pwmbuffer, 0, 2*24*n);
+}
+
+
+
+
+
+void  Adafruit_TLC5947::spiwriteMSB(uint32_t d) {
+  if (_clk >= 0) {
+    uint32_t b = 0x80;        // 0x80 = 128
+    //  b <<= (bits-1);
+    for (; b!=0; b>>=1) {
       digitalWrite(_clk, LOW);
-      
-      if (pwmbuffer[c] & (1 << b))  
+      if (d & b)  
         digitalWrite(_dat, HIGH);
       else
         digitalWrite(_dat, LOW);
-
       digitalWrite(_clk, HIGH);
     }
+  } else {
+    SPI.transfer(d);
   }
-  digitalWrite(_clk, LOW);
-  
-  digitalWrite(_lat, HIGH);  
-  digitalWrite(_lat, LOW);
 }
 
+
+void Adafruit_TLC5947::write(void) {
+
+    unsigned int chan1 = 0;
+    unsigned int chan2 = 0;
+    byte address1 = 0;
+    byte address2 = 0;
+    byte address3 = 0;
+
+    // packing each 2 channel (12bit*2) to 3 byte (8bit*3) for transfering
+    SPI.beginTransaction(SPISettings(15000000, MSBFIRST, SPI_MODE0));
+    digitalWrite(_lat, LOW);
+
+    for (unsigned int ledpos = (24 / 2) * numdrivers  - 1; ledpos > 0; ledpos--) {
+      chan1 = pwmbuffer[ledpos];
+      chan2 = pwmbuffer[ledpos -1];
+      address1 = (byte)(chan1 >> 4) ;
+      address2 = (byte)((chan1 << 4) & (B11110000)) + (byte)((chan2 >> 8) & (B00001111));
+      address3 = (byte)chan2;
+      // SPI.transfer(address1);  // hardware SPI only
+      // SPI.transfer(address2);
+      // SPI.transfer(address3);
+      spiwriteMSB(address1);   // to enable software-SPI as well
+      spiwriteMSB(address2);
+      spiwriteMSB(address3);
+    }
+
+    digitalWrite(_lat, HIGH);   // TSU2, go HIGH, minimum 30ns 
+    SPI.endTransaction();
+    digitalWrite(_lat, LOW);
+}
 
 
 void Adafruit_TLC5947::setPWM(uint16_t chan, uint16_t pwm) {
@@ -70,10 +131,13 @@ void Adafruit_TLC5947::setLED(uint16_t lednum, uint16_t r, uint16_t g, uint16_t 
 boolean Adafruit_TLC5947::begin() {
   if (!pwmbuffer) return false;
 
-  pinMode(_clk, OUTPUT);
-  pinMode(_dat, OUTPUT);
   pinMode(_lat, OUTPUT);
-  digitalWrite(_lat, LOW);
+  if (_clk >= 0) {
+    pinMode(_clk, OUTPUT);
+    pinMode(_dat, OUTPUT);
+  } else {
+    SPI.begin();
+  }
 
   return true;
 }

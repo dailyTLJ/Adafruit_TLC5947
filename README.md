@@ -1,18 +1,11 @@
 Adafruit_TLC5947
 ================
 
+  Adapted Adafruit_TLC5947 https://github.com/adafruit/Adafruit_TLC5947 
+  to also work with Hardware SPI
 
-  This is a library for our Adafruit 24-channel PWM/LED driver
+  Comparison (Arduino Due):
+  Run 7 boards (168 LEDs) with Software SPI: 13856us ~71Hz
+  Run 7 boards (168 LEDs) with Hardware SPI: 561us ~1782Hz
 
-  Pick one up today in the adafruit shop!
-  ------> http://www.adafruit.com/products/1429
-
-  These drivers uses SPI to communicate, 3 pins are required to  
-  interface: Data, Clock and Latch. The boards are chainable
-
-  Adafruit invests time and resources providing this open source code, 
-  please support Adafruit and open-source hardware by purchasing 
-  products from Adafruit!
-
-  Written by Limor Fried/Ladyada for Adafruit Industries.  
-  BSD license, all text above must be included in any redistribution
+  Library still allows both Sofware and Hardware SPI setup. 
