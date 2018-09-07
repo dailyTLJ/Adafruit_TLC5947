@@ -94,7 +94,12 @@ void Adafruit_TLC5947::write(void) {
     SPI.beginTransaction(SPISettings(15000000, MSBFIRST, SPI_MODE0));
     digitalWrite(_lat, LOW);
 
-    for (unsigned int ledpos = (24 / 2) * numdrivers  - 1; ledpos > 0; ledpos--) {
+    for (int i=0; i<6; i++) { 
+      // SPI.transfer(address3);
+      spiwriteMSB(address3);
+    }
+
+    for (unsigned int ledpos = 24 * numdrivers  - 1; ledpos > 1; ledpos-=2) {
       chan1 = pwmbuffer[ledpos];
       chan2 = pwmbuffer[ledpos -1];
       address1 = (byte)(chan1 >> 4) ;
