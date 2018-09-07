@@ -82,6 +82,7 @@ void  Adafruit_TLC5947::spiwriteMSB(uint32_t d) {
 }
 
 
+
 void Adafruit_TLC5947::write(void) {
 
     unsigned int chan1 = 0;
@@ -94,14 +95,9 @@ void Adafruit_TLC5947::write(void) {
     SPI.beginTransaction(SPISettings(15000000, MSBFIRST, SPI_MODE0));
     digitalWrite(_lat, LOW);
 
-    for (int i=0; i<6; i++) { 
-      // SPI.transfer(address3);
-      spiwriteMSB(address3);
-    }
-
-    for (unsigned int ledpos = 24 * numdrivers  - 1; ledpos > 1; ledpos-=2) {
-      chan1 = pwmbuffer[ledpos];
-      chan2 = pwmbuffer[ledpos -1];
+    for (int ledpos = 24/2 * numdrivers  - 1; ledpos >= 0; ledpos--) {
+      chan1 = pwmbuffer[ledpos*2 +1];
+      chan2 = pwmbuffer[ledpos*2];
       address1 = (byte)(chan1 >> 4) ;
       address2 = (byte)((chan1 << 4) & (B11110000)) + (byte)((chan2 >> 8) & (B00001111));
       address3 = (byte)chan2;
@@ -121,8 +117,13 @@ void Adafruit_TLC5947::write(void) {
 
 void Adafruit_TLC5947::setPWM(uint16_t chan, uint16_t pwm) {
   if (pwm > 4095) pwm = 4095;
-  if (chan > 24*numdrivers) return;
+  if (chan >= 24*numdrivers) return;
   pwmbuffer[chan] = pwm;  
+  // Serial.print("set ");
+  // Serial.print(chan);
+  // Serial.print(" to ");
+  // Serial.print(pwm);
+  // Serial.println();
 }
 
 

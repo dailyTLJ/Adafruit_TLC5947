@@ -43,5 +43,4 @@ class Adafruit_TLC5947 {
 
 };
 
-
 #endif
