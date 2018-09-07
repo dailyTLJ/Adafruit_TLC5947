@@ -23,19 +23,16 @@
 #define data   4
 #define clock   5
 #define latch   6
-#define oe  -1  // set to -1 to not use the enable pin (its optional)
+#define oe      7  //  Blank pin, improves flickering
 
-Adafruit_TLC5947 tlc = Adafruit_TLC5947(NUM_TLC5974, clock, data, latch);
+Adafruit_TLC5947 tlc;
 
 void setup() {
   Serial.begin(9600);
   
   Serial.println("TLC5974 test");
+  tlc.init(NUM_TLC5974, clock, data, latch, oe);
   tlc.begin();
-  if (oe >= 0) {
-    pinMode(oe, OUTPUT);
-    digitalWrite(oe, LOW);
-  }
 }
 
 void loop() {

@@ -26,12 +26,13 @@ Adafruit_TLC5947::Adafruit_TLC5947() {
 }
 
 // software SPI mode
-void Adafruit_TLC5947::init(uint16_t n, uint8_t c, uint8_t d, uint8_t l) {
+void Adafruit_TLC5947::init(uint16_t n, uint8_t c, uint8_t d, uint8_t l, uint8_t b) {
   Serial.println("Adafruit_TLC5947 init for Software SPI");
   numdrivers = n;
   _clk = c;
   _dat = d;
   _lat = l;
+  _blank = b;
 
   //pwmbuffer = (uint16_t *)calloc(2, 24*n);
   pwmbuffer = (uint16_t *)malloc(2 * 24*n);
@@ -40,12 +41,13 @@ void Adafruit_TLC5947::init(uint16_t n, uint8_t c, uint8_t d, uint8_t l) {
 
 
 // hardware SPI mode
-void Adafruit_TLC5947::init(uint16_t n, uint8_t l) {
+void Adafruit_TLC5947::init(uint16_t n, uint8_t l, uint8_t b) {
   Serial.println("Adafruit_TLC5947 init for Hardware SPI");
   numdrivers = n;
   _clk = -1;
   _dat = -1;
   _lat = l;
+  _blank = b;
 
 // set SPI settings in write() call to enable multiple parallel SPI calls/settings
 //   SPI.setBitOrder(MSBFIRST);
@@ -94,6 +96,7 @@ void Adafruit_TLC5947::write(void) {
     // packing each 2 channel (12bit*2) to 3 byte (8bit*3) for transfering
     SPI.beginTransaction(SPISettings(15000000, MSBFIRST, SPI_MODE0));
     digitalWrite(_lat, LOW);
+    digitalWrite(_blank, LOW);
 
     for (int ledpos = 24/2 * numdrivers  - 1; ledpos >= 0; ledpos--) {
       chan1 = pwmbuffer[ledpos*2 +1];
@@ -109,9 +112,11 @@ void Adafruit_TLC5947::write(void) {
       spiwriteMSB(address3);
     }
 
+    digitalWrite(_blank, HIGH);
     digitalWrite(_lat, HIGH);   // TSU2, go HIGH, minimum 30ns 
     SPI.endTransaction();
     digitalWrite(_lat, LOW);
+    digitalWrite(_blank, LOW);
 }
 
 
@@ -138,6 +143,7 @@ boolean Adafruit_TLC5947::begin() {
   if (!pwmbuffer) return false;
 
   pinMode(_lat, OUTPUT);
+  pinMode(_blank, OUTPUT);
   if (_clk >= 0) {
     pinMode(_clk, OUTPUT);
     pinMode(_dat, OUTPUT);

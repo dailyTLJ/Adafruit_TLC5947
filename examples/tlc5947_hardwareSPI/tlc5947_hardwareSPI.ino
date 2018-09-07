@@ -21,7 +21,7 @@
 #define NUM_TLC5974 2
 
 #define latch   4  // Arduino Due Chip-Select 
-#define oe  -1  // set to -1 to not use the enable pin (its optional)
+#define oe      52  //  Blank pin, improves flickering
 
 Adafruit_TLC5947 tlc;
 
@@ -33,13 +33,9 @@ void setup() {
   Serial.begin(9600);
   Serial.println("TLC5974 hardware-SPI test");
 
-  tlc.init(NUM_TLC5974, latch);
+  tlc.init(NUM_TLC5974, latch, oe);
   tlc.begin();
 
-  if (oe >= 0) {
-    pinMode(oe, OUTPUT);
-    digitalWrite(oe, LOW);
-  }
 }
 
 
